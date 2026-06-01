@@ -122,7 +122,7 @@ npm start
 | `/ask <prompt>` | One-shot Codex prompt with no reusable Discord session history |
 | `/chat <message>` | Start or continue a persistent Codex conversation |
 | `/reset` | Clear this Discord key's stored Codex thread mapping |
-| `/model list` | Show configured model IDs from `CODEX_MODEL` and session overrides |
+| `/model list` | Show Codex CLI model-cache IDs plus `CODEX_MODEL` and session overrides |
 | `/model set <model_id>` | Set a model override for the next turn in this user/thread session |
 | `/model current` | Show the configured model override for this user/thread session |
 | `/status` | Show Codex package/auth environment status |
