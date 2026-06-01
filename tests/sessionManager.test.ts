@@ -209,6 +209,9 @@ test("listModels reads the Codex CLI model cache", async () => {
       path.join(codexHome, "models_cache.json"),
       JSON.stringify({
         models: [
+          null,
+          "bad-entry",
+          42,
           { slug: "hidden-model", display_name: "Hidden Model", visibility: "hide", priority: 1 },
           { slug: "gpt-later", display_name: "GPT Later", visibility: "list", priority: 20 },
           { slug: "gpt-first", display_name: "GPT First", visibility: "list", priority: 10 },

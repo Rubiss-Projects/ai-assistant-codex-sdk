@@ -28,6 +28,10 @@ function unsupported(feature: string): never {
   throw new Error(`${feature} is not exposed by @openai/codex-sdk.`);
 }
 
+function isCachedCodexModel(value: unknown): value is CachedCodexModel {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 /**
  * Splits text into chunks that each fit within Discord's 2000-char message limit.
  * Splits at paragraph -> newline -> word boundaries to avoid mid-word splits.
@@ -436,7 +440,8 @@ export class SessionManager {
       return [];
     }
 
-    const models = (parsed as { models: CachedCodexModel[] }).models
+    const models = (parsed as { models: unknown[] }).models
+      .filter(isCachedCodexModel)
       .filter((model) => typeof model.slug === "string")
       .filter((model) => model.visibility !== "hide")
       .sort((a, b) => {
