@@ -12,6 +12,9 @@ function isThreadNotFoundError(err) {
 function unsupported(feature) {
     throw new Error(`${feature} is not exposed by @openai/codex-sdk.`);
 }
+function isCachedCodexModel(value) {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 /**
  * Splits text into chunks that each fit within Discord's 2000-char message limit.
  * Splits at paragraph -> newline -> word boundaries to avoid mid-word splits.
@@ -371,6 +374,7 @@ export class SessionManager {
             return [];
         }
         const models = parsed.models
+            .filter(isCachedCodexModel)
             .filter((model) => typeof model.slug === "string")
             .filter((model) => model.visibility !== "hide")
             .sort((a, b) => {
