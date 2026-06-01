@@ -8,6 +8,13 @@ const require = createRequire(import.meta.url);
 const DISCORD_MAX = 1990; // Leave headroom for code-fence close/reopen overhead
 
 type McpServerConfig = Record<string, unknown> & { tools?: string[] };
+type ModelInfo = { id: string; name: string };
+type CachedCodexModel = {
+  slug?: unknown;
+  display_name?: unknown;
+  visibility?: unknown;
+  priority?: unknown;
+};
 type HistoryEvent =
   | { type: "user.message"; data: { content: string } }
   | { type: "assistant.message"; data: { content: string } };
@@ -399,10 +406,52 @@ export class SessionManager {
   }
 
   async listModels() {
+    const modelsById = new Map<string, ModelInfo>();
+    for (const model of this.readCachedCodexModels()) {
+      modelsById.set(model.id, model);
+    }
+
     const configured = [process.env.CODEX_MODEL, ...this.modelOverrides.values()].filter(
       (model): model is string => Boolean(model)
     );
-    return Array.from(new Set(configured)).map((id) => ({ id, name: id }));
+    for (const id of configured) {
+      if (!modelsById.has(id)) modelsById.set(id, { id, name: id });
+    }
+
+    return Array.from(modelsById.values());
+  }
+
+  private readCachedCodexModels(): ModelInfo[] {
+    const codexHome = process.env.CODEX_HOME ?? path.join(os.homedir(), ".codex");
+    const cachePath = path.join(codexHome, "models_cache.json");
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(fs.readFileSync(cachePath, "utf8"));
+    } catch {
+      return [];
+    }
+
+    if (!parsed || typeof parsed !== "object" || !Array.isArray((parsed as { models?: unknown }).models)) {
+      return [];
+    }
+
+    const models = (parsed as { models: CachedCodexModel[] }).models
+      .filter((model) => typeof model.slug === "string")
+      .filter((model) => model.visibility !== "hide")
+      .sort((a, b) => {
+        const aPriority = typeof a.priority === "number" ? a.priority : Number.MAX_SAFE_INTEGER;
+        const bPriority = typeof b.priority === "number" ? b.priority : Number.MAX_SAFE_INTEGER;
+        return aPriority - bPriority;
+      });
+
+    return models.map((model) => {
+      const id = model.slug as string;
+      return {
+        id,
+        name: typeof model.display_name === "string" ? model.display_name : id,
+      };
+    });
   }
 
   async setModel(userId: string, model: string): Promise<void> {

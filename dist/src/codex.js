@@ -346,8 +346,45 @@ export class SessionManager {
         return this.withExistingLiveSession(userId, async () => this.histories.get(userId) ?? []);
     }
     async listModels() {
+        const modelsById = new Map();
+        for (const model of this.readCachedCodexModels()) {
+            modelsById.set(model.id, model);
+        }
         const configured = [process.env.CODEX_MODEL, ...this.modelOverrides.values()].filter((model) => Boolean(model));
-        return Array.from(new Set(configured)).map((id) => ({ id, name: id }));
+        for (const id of configured) {
+            if (!modelsById.has(id))
+                modelsById.set(id, { id, name: id });
+        }
+        return Array.from(modelsById.values());
+    }
+    readCachedCodexModels() {
+        const codexHome = process.env.CODEX_HOME ?? path.join(os.homedir(), ".codex");
+        const cachePath = path.join(codexHome, "models_cache.json");
+        let parsed;
+        try {
+            parsed = JSON.parse(fs.readFileSync(cachePath, "utf8"));
+        }
+        catch {
+            return [];
+        }
+        if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.models)) {
+            return [];
+        }
+        const models = parsed.models
+            .filter((model) => typeof model.slug === "string")
+            .filter((model) => model.visibility !== "hide")
+            .sort((a, b) => {
+            const aPriority = typeof a.priority === "number" ? a.priority : Number.MAX_SAFE_INTEGER;
+            const bPriority = typeof b.priority === "number" ? b.priority : Number.MAX_SAFE_INTEGER;
+            return aPriority - bPriority;
+        });
+        return models.map((model) => {
+            const id = model.slug;
+            return {
+                id,
+                name: typeof model.display_name === "string" ? model.display_name : id,
+            };
+        });
     }
     async setModel(userId, model) {
         this.modelOverrides.set(userId, model);

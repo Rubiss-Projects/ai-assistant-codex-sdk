@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 import { SessionManager } from "../src/codex.js";
 
@@ -23,6 +26,7 @@ type ClientLike = {
 type TestableSessionManager = {
   sendMessage: SessionManager["sendMessage"];
   getHistory: SessionManager["getHistory"];
+  listModels: SessionManager["listModels"];
   setModel: SessionManager["setModel"];
   getCurrentModel: SessionManager["getCurrentModel"];
   sessions: Map<string, ThreadLike>;
@@ -192,4 +196,68 @@ test("setModel records a per-session model and evicts the live thread", async ()
 
   assert.equal(await manager.getCurrentModel("user-1"), "gpt-5.1-codex-max");
   assert.equal(manager.sessions.has("user-1"), false);
+});
+
+test("listModels reads the Codex CLI model cache", async () => {
+  const previousCodexHome = process.env.CODEX_HOME;
+  const previousCodexModel = process.env.CODEX_MODEL;
+  const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), "ai-assistant-codex-home-"));
+  try {
+    process.env.CODEX_HOME = codexHome;
+    delete process.env.CODEX_MODEL;
+    fs.writeFileSync(
+      path.join(codexHome, "models_cache.json"),
+      JSON.stringify({
+        models: [
+          { slug: "hidden-model", display_name: "Hidden Model", visibility: "hide", priority: 1 },
+          { slug: "gpt-later", display_name: "GPT Later", visibility: "list", priority: 20 },
+          { slug: "gpt-first", display_name: "GPT First", visibility: "list", priority: 10 },
+        ],
+      })
+    );
+
+    const manager = createTestManager();
+
+    assert.deepEqual(await manager.listModels(), [
+      { id: "gpt-first", name: "GPT First" },
+      { id: "gpt-later", name: "GPT Later" },
+    ]);
+  } finally {
+    if (previousCodexHome === undefined) delete process.env.CODEX_HOME;
+    else process.env.CODEX_HOME = previousCodexHome;
+    if (previousCodexModel === undefined) delete process.env.CODEX_MODEL;
+    else process.env.CODEX_MODEL = previousCodexModel;
+    fs.rmSync(codexHome, { recursive: true, force: true });
+  }
+});
+
+test("listModels includes configured model IDs missing from the cache", async () => {
+  const previousCodexHome = process.env.CODEX_HOME;
+  const previousCodexModel = process.env.CODEX_MODEL;
+  const codexHome = fs.mkdtempSync(path.join(os.tmpdir(), "ai-assistant-codex-home-"));
+  try {
+    process.env.CODEX_HOME = codexHome;
+    process.env.CODEX_MODEL = "configured-model";
+    fs.writeFileSync(
+      path.join(codexHome, "models_cache.json"),
+      JSON.stringify({
+        models: [{ slug: "cached-model", display_name: "Cached Model", visibility: "list", priority: 1 }],
+      })
+    );
+
+    const manager = createTestManager();
+    await manager.setModel("user-1", "override-model");
+
+    assert.deepEqual(await manager.listModels(), [
+      { id: "cached-model", name: "Cached Model" },
+      { id: "configured-model", name: "configured-model" },
+      { id: "override-model", name: "override-model" },
+    ]);
+  } finally {
+    if (previousCodexHome === undefined) delete process.env.CODEX_HOME;
+    else process.env.CODEX_HOME = previousCodexHome;
+    if (previousCodexModel === undefined) delete process.env.CODEX_MODEL;
+    else process.env.CODEX_MODEL = previousCodexModel;
+    fs.rmSync(codexHome, { recursive: true, force: true });
+  }
 });
