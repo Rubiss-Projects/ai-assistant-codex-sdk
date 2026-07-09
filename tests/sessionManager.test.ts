@@ -84,6 +84,43 @@ test("sendMessage resumes a stored Codex thread", async () => {
   assert.equal(manager.sessions.get("user-1"), resumedThread);
 });
 
+test("sendMessage starts new threads with the default model and low reasoning", async () => {
+  const previousCodexModel = process.env.CODEX_MODEL;
+  try {
+    delete process.env.CODEX_MODEL;
+    const manager = createTestManager();
+    const thread: ThreadLike = {
+      id: "new-thread",
+      run: async () => ({ finalResponse: "ok", items: [], usage: null }),
+    };
+
+    manager.client = {
+      startThread: (config) => {
+        assert.deepEqual(
+          config && typeof config === "object"
+            ? {
+                model: (config as { model?: unknown }).model,
+                modelReasoningEffort: (config as { modelReasoningEffort?: unknown })
+                  .modelReasoningEffort,
+              }
+            : config,
+          { model: "gpt-5.6-sol", modelReasoningEffort: "low" }
+        );
+        return thread;
+      },
+      resumeThread: () => {
+        throw new Error("should not resume");
+      },
+    };
+
+    assert.equal(await manager.sendMessage("user-1", "hello"), "ok");
+    assert.equal(await manager.getCurrentModel("user-1"), "gpt-5.6-sol");
+  } finally {
+    if (previousCodexModel === undefined) delete process.env.CODEX_MODEL;
+    else process.env.CODEX_MODEL = previousCodexModel;
+  }
+});
+
 test("sendMessage starts a fresh thread when cached thread is missing from Codex", async () => {
   const storedThreads: Record<string, string> = { "user-1": "stale-thread" };
   const manager = createTestManager(storedThreads);
@@ -224,6 +261,7 @@ test("listModels reads the Codex CLI model cache", async () => {
     assert.deepEqual(await manager.listModels(), [
       { id: "gpt-first", name: "GPT First" },
       { id: "gpt-later", name: "GPT Later" },
+      { id: "gpt-5.6-sol", name: "gpt-5.6-sol" },
     ]);
   } finally {
     if (previousCodexHome === undefined) delete process.env.CODEX_HOME;

@@ -6,6 +6,8 @@ import { Codex, Thread, type ThreadItem, type ThreadOptions, type UserInput } fr
 
 const require = createRequire(import.meta.url);
 const DISCORD_MAX = 1990; // Leave headroom for code-fence close/reopen overhead
+const DEFAULT_CODEX_MODEL = "gpt-5.6-sol";
+const DEFAULT_CODEX_REASONING_EFFORT = "low";
 
 type McpServerConfig = Record<string, unknown> & { tools?: string[] };
 type ModelInfo = { id: string; name: string };
@@ -228,9 +230,8 @@ export class SessionManager {
   private threadOptions(key: string): ThreadOptions {
     const workingDirectory = this.workingDirOverrides.get(key) ?? process.cwd();
     return {
-      ...(this.modelOverrides.get(key) ?? process.env.CODEX_MODEL
-        ? { model: this.modelOverrides.get(key) ?? process.env.CODEX_MODEL }
-        : {}),
+      model: this.modelOverrides.get(key) ?? process.env.CODEX_MODEL ?? DEFAULT_CODEX_MODEL,
+      modelReasoningEffort: DEFAULT_CODEX_REASONING_EFFORT,
       workingDirectory,
       skipGitRepoCheck: true,
       approvalPolicy: "never",
@@ -415,7 +416,10 @@ export class SessionManager {
       modelsById.set(model.id, model);
     }
 
-    const configured = [process.env.CODEX_MODEL, ...this.modelOverrides.values()].filter(
+    const configured = [
+      process.env.CODEX_MODEL ?? DEFAULT_CODEX_MODEL,
+      ...this.modelOverrides.values(),
+    ].filter(
       (model): model is string => Boolean(model)
     );
     for (const id of configured) {
@@ -465,7 +469,7 @@ export class SessionManager {
   }
 
   async getCurrentModel(key: string): Promise<string | undefined> {
-    return this.modelOverrides.get(key) ?? process.env.CODEX_MODEL;
+    return this.modelOverrides.get(key) ?? process.env.CODEX_MODEL ?? DEFAULT_CODEX_MODEL;
   }
 
   async listAgents(..._args: unknown[]): Promise<{ name: string; displayName: string; description: string }[]> {
