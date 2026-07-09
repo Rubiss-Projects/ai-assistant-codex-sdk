@@ -5,6 +5,7 @@ import { handleReset } from "./handlers/slash/reset.js";
 import { handleServers } from "./handlers/slash/servers.js";
 import { handleLeave } from "./handlers/slash/leave.js";
 import { handleModel } from "./handlers/slash/model.js";
+import { handleReasoning } from "./handlers/slash/reasoning.js";
 import { handleStatus } from "./handlers/slash/status.js";
 import { handleHistory } from "./handlers/slash/history.js";
 import { handleMcp } from "./handlers/slash/mcp.js";
@@ -54,6 +55,9 @@ export function createBot(sessions) {
                 break;
             case "model":
                 await handleModel(cmd, sessions);
+                break;
+            case "reasoning":
+                await handleReasoning(cmd, sessions);
                 break;
             case "status":
                 await handleStatus(cmd, sessions);

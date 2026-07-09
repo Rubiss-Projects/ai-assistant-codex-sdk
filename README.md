@@ -10,6 +10,7 @@ A personal Discord bot backed by [`@openai/codex-sdk`](https://www.npmjs.com/pac
 - Image attachments are forwarded to Codex as local image inputs.
 - `workspace` options set the Codex working directory for a session.
 - `/model set` stores a per-session model override for the next turn.
+- `/reasoning` lists, shows, and changes per-session reasoning effort.
 - New Codex threads default to `gpt-5.6-sol` with low reasoning effort.
 - `/history`, `/reset`, `/status`, `/servers`, `/leave`, and `/mcp` cover basic bot and session management.
 
@@ -105,7 +106,8 @@ OPENAI_API_KEY=sk-...
 `OPENAI_API_KEY` is optional when the Codex CLI is already logged in for the same user that runs the bot.
 
 The bot defaults new Codex threads to `gpt-5.6-sol` with low reasoning effort. Set
-`CODEX_MODEL` or use `/model set` to override the model; reasoning effort remains low.
+`CODEX_MODEL` or use `/model set` to override the model. Use `/reasoning set` to change
+reasoning effort for a user session or bot-owned thread.
 
 Register slash commands:
 
@@ -129,6 +131,9 @@ npm start
 | `/model list` | Show Codex CLI model-cache IDs plus the default model and overrides |
 | `/model set <model_id>` | Set a model override for the next turn in this user/thread session |
 | `/model current` | Show the effective model for this user/thread session |
+| `/reasoning list` | Show supported reasoning effort levels |
+| `/reasoning set <effort>` | Set reasoning effort for the next turn in this user/thread session |
+| `/reasoning current` | Show the effective reasoning effort for this user/thread session |
 | `/status` | Show Codex package/auth environment status |
 | `/history [count]` | Show recent in-process user/assistant exchanges |
 | `/mcp list` | Show VS Code-style MCP configs visible to the bot |

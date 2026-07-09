@@ -7,7 +7,9 @@ import { Codex, Thread, type ThreadItem, type ThreadOptions, type UserInput } fr
 const require = createRequire(import.meta.url);
 const DISCORD_MAX = 1990; // Leave headroom for code-fence close/reopen overhead
 const DEFAULT_CODEX_MODEL = "gpt-5.6-sol";
-const DEFAULT_CODEX_REASONING_EFFORT = "low";
+export const REASONING_EFFORTS = ["minimal", "low", "medium", "high", "xhigh"] as const;
+export type ReasoningEffort = (typeof REASONING_EFFORTS)[number];
+const DEFAULT_CODEX_REASONING_EFFORT: ReasoningEffort = "low";
 
 function configuredCodexModel(): string {
   return process.env.CODEX_MODEL?.trim() || DEFAULT_CODEX_MODEL;
@@ -223,6 +225,7 @@ export class SessionManager {
   private histories: Map<string, HistoryEvent[]> = new Map();
   private workingDirOverrides: Map<string, string> = new Map();
   private modelOverrides: Map<string, string> = new Map();
+  private reasoningEffortOverrides: Map<string, ReasoningEffort> = new Map();
   private mcpToolOverrides: Map<string, Record<string, string[]>> = new Map();
 
   constructor() {
@@ -235,7 +238,8 @@ export class SessionManager {
     const workingDirectory = this.workingDirOverrides.get(key) ?? process.cwd();
     return {
       model: this.modelOverrides.get(key) ?? configuredCodexModel(),
-      modelReasoningEffort: DEFAULT_CODEX_REASONING_EFFORT,
+      modelReasoningEffort:
+        this.reasoningEffortOverrides.get(key) ?? DEFAULT_CODEX_REASONING_EFFORT,
       workingDirectory,
       skipGitRepoCheck: true,
       approvalPolicy: "never",
@@ -474,6 +478,19 @@ export class SessionManager {
 
   async getCurrentModel(key: string): Promise<string | undefined> {
     return this.modelOverrides.get(key) ?? configuredCodexModel();
+  }
+
+  async listReasoningEfforts(): Promise<ReasoningEffort[]> {
+    return [...REASONING_EFFORTS];
+  }
+
+  async setReasoningEffort(key: string, effort: ReasoningEffort): Promise<void> {
+    this.reasoningEffortOverrides.set(key, effort);
+    this.sessions.delete(key);
+  }
+
+  async getCurrentReasoningEffort(key: string): Promise<ReasoningEffort> {
+    return this.reasoningEffortOverrides.get(key) ?? DEFAULT_CODEX_REASONING_EFFORT;
   }
 
   async listAgents(..._args: unknown[]): Promise<{ name: string; displayName: string; description: string }[]> {

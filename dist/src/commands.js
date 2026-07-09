@@ -56,6 +56,19 @@ export const commands = [
         .setRequired(true)))
         .addSubcommand((sub) => sub.setName("current").setDescription("Show the current model for your session")),
     new SlashCommandBuilder()
+        .setName("reasoning")
+        .setDescription("List or change the reasoning effort for your session")
+        .addSubcommand((sub) => sub.setName("list").setDescription("List available reasoning effort levels"))
+        .addSubcommand((sub) => sub
+        .setName("set")
+        .setDescription("Change reasoning effort (takes effect on your next message)")
+        .addStringOption((opt) => opt
+        .setName("effort")
+        .setDescription("Reasoning effort level")
+        .setRequired(true)
+        .addChoices({ name: "Minimal", value: "minimal" }, { name: "Low", value: "low" }, { name: "Medium", value: "medium" }, { name: "High", value: "high" }, { name: "Extra high", value: "xhigh" })))
+        .addSubcommand((sub) => sub.setName("current").setDescription("Show the current reasoning effort for your session")),
+    new SlashCommandBuilder()
         .setName("status")
         .setDescription("Show Codex auth status and CLI version"),
     new SlashCommandBuilder()
