@@ -5,6 +5,8 @@ import path from "path";
 import { Codex } from "@openai/codex-sdk";
 const require = createRequire(import.meta.url);
 const DISCORD_MAX = 1990; // Leave headroom for code-fence close/reopen overhead
+const DEFAULT_CODEX_MODEL = "gpt-5.6-sol";
+const DEFAULT_CODEX_REASONING_EFFORT = "low";
 function isThreadNotFoundError(err) {
     const message = err instanceof Error ? err.message : String(err);
     return /(thread|session).*(not found|missing|unknown)/i.test(message);
@@ -199,9 +201,8 @@ export class SessionManager {
     threadOptions(key) {
         const workingDirectory = this.workingDirOverrides.get(key) ?? process.cwd();
         return {
-            ...(this.modelOverrides.get(key) ?? process.env.CODEX_MODEL
-                ? { model: this.modelOverrides.get(key) ?? process.env.CODEX_MODEL }
-                : {}),
+            model: this.modelOverrides.get(key) ?? process.env.CODEX_MODEL ?? DEFAULT_CODEX_MODEL,
+            modelReasoningEffort: DEFAULT_CODEX_REASONING_EFFORT,
             workingDirectory,
             skipGitRepoCheck: true,
             approvalPolicy: "never",
@@ -353,7 +354,10 @@ export class SessionManager {
         for (const model of this.readCachedCodexModels()) {
             modelsById.set(model.id, model);
         }
-        const configured = [process.env.CODEX_MODEL, ...this.modelOverrides.values()].filter((model) => Boolean(model));
+        const configured = [
+            process.env.CODEX_MODEL ?? DEFAULT_CODEX_MODEL,
+            ...this.modelOverrides.values(),
+        ].filter((model) => Boolean(model));
         for (const id of configured) {
             if (!modelsById.has(id))
                 modelsById.set(id, { id, name: id });
@@ -395,7 +399,7 @@ export class SessionManager {
         this.sessions.delete(userId);
     }
     async getCurrentModel(key) {
-        return this.modelOverrides.get(key) ?? process.env.CODEX_MODEL;
+        return this.modelOverrides.get(key) ?? process.env.CODEX_MODEL ?? DEFAULT_CODEX_MODEL;
     }
     async listAgents(..._args) {
         unsupported("Agent listing");
