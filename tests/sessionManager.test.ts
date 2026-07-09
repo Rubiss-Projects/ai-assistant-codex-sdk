@@ -29,6 +29,9 @@ type TestableSessionManager = {
   listModels: SessionManager["listModels"];
   setModel: SessionManager["setModel"];
   getCurrentModel: SessionManager["getCurrentModel"];
+  listReasoningEfforts: SessionManager["listReasoningEfforts"];
+  setReasoningEffort: SessionManager["setReasoningEffort"];
+  getCurrentReasoningEffort: SessionManager["getCurrentReasoningEffort"];
   sessions: Map<string, ThreadLike>;
   store: StoreLike;
   client: ClientLike;
@@ -233,6 +236,54 @@ test("setModel records a per-session model and evicts the live thread", async ()
 
   assert.equal(await manager.getCurrentModel("user-1"), "gpt-5.1-codex-max");
   assert.equal(manager.sessions.has("user-1"), false);
+});
+
+test("setReasoningEffort records a per-session effort and evicts the live thread", async () => {
+  const manager = createTestManager();
+  const thread: ThreadLike = {
+    id: "thread-1",
+    run: async () => ({ finalResponse: "ok", items: [], usage: null }),
+  };
+  manager.sessions.set("user-1", thread);
+
+  assert.deepEqual(await manager.listReasoningEfforts(), [
+    "minimal",
+    "low",
+    "medium",
+    "high",
+    "xhigh",
+  ]);
+  assert.equal(await manager.getCurrentReasoningEffort("user-1"), "low");
+
+  await manager.setReasoningEffort("user-1", "high");
+
+  assert.equal(await manager.getCurrentReasoningEffort("user-1"), "high");
+  assert.equal(manager.sessions.has("user-1"), false);
+});
+
+test("sendMessage applies the per-session reasoning effort to a new thread", async () => {
+  const manager = createTestManager();
+  const thread: ThreadLike = {
+    id: "new-thread",
+    run: async () => ({ finalResponse: "ok", items: [], usage: null }),
+  };
+  manager.client = {
+    startThread: (config) => {
+      assert.equal(
+        config && typeof config === "object"
+          ? (config as { modelReasoningEffort?: unknown }).modelReasoningEffort
+          : undefined,
+        "xhigh"
+      );
+      return thread;
+    },
+    resumeThread: () => {
+      throw new Error("should not resume");
+    },
+  };
+
+  await manager.setReasoningEffort("user-1", "xhigh");
+  assert.equal(await manager.sendMessage("user-1", "hello"), "ok");
 });
 
 test("listModels reads the Codex CLI model cache", async () => {

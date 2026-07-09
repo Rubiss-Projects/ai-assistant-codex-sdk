@@ -6,6 +6,7 @@ import { Codex } from "@openai/codex-sdk";
 const require = createRequire(import.meta.url);
 const DISCORD_MAX = 1990; // Leave headroom for code-fence close/reopen overhead
 const DEFAULT_CODEX_MODEL = "gpt-5.6-sol";
+export const REASONING_EFFORTS = ["minimal", "low", "medium", "high", "xhigh"];
 const DEFAULT_CODEX_REASONING_EFFORT = "low";
 function configuredCodexModel() {
     return process.env.CODEX_MODEL?.trim() || DEFAULT_CODEX_MODEL;
@@ -195,6 +196,7 @@ export class SessionManager {
     histories = new Map();
     workingDirOverrides = new Map();
     modelOverrides = new Map();
+    reasoningEffortOverrides = new Map();
     mcpToolOverrides = new Map();
     constructor() {
         this.client = new Codex({
@@ -205,7 +207,7 @@ export class SessionManager {
         const workingDirectory = this.workingDirOverrides.get(key) ?? process.cwd();
         return {
             model: this.modelOverrides.get(key) ?? configuredCodexModel(),
-            modelReasoningEffort: DEFAULT_CODEX_REASONING_EFFORT,
+            modelReasoningEffort: this.reasoningEffortOverrides.get(key) ?? DEFAULT_CODEX_REASONING_EFFORT,
             workingDirectory,
             skipGitRepoCheck: true,
             approvalPolicy: "never",
@@ -403,6 +405,16 @@ export class SessionManager {
     }
     async getCurrentModel(key) {
         return this.modelOverrides.get(key) ?? configuredCodexModel();
+    }
+    async listReasoningEfforts() {
+        return [...REASONING_EFFORTS];
+    }
+    async setReasoningEffort(key, effort) {
+        this.reasoningEffortOverrides.set(key, effort);
+        this.sessions.delete(key);
+    }
+    async getCurrentReasoningEffort(key) {
+        return this.reasoningEffortOverrides.get(key) ?? DEFAULT_CODEX_REASONING_EFFORT;
     }
     async listAgents(..._args) {
         unsupported("Agent listing");
