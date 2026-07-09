@@ -5,7 +5,10 @@ function sessionScope(interaction: ChatInputCommandInteraction): {
   key: string;
   label: string;
 } {
-  return interaction.channel?.isThread()
+  const isBotOwnedThread =
+    interaction.channel?.isThread() &&
+    interaction.channel.ownerId === interaction.client.user?.id;
+  return isBotOwnedThread
     ? { key: interaction.channelId, label: "this thread" }
     : { key: interaction.user.id, label: "your session" };
 }
