@@ -88,7 +88,7 @@ export function createBot(sessions) {
         const isFreeChannel = freeChannels.has(message.channelId);
         if (!isMentioned && !isFreeChannel)
             return;
-        await handleMention(message, client, sessions);
+        await handleMention(message, client, sessions, message.channel.isThread() ? message.channelId : undefined);
     });
     return client;
 }
