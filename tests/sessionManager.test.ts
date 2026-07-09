@@ -84,10 +84,10 @@ test("sendMessage resumes a stored Codex thread", async () => {
   assert.equal(manager.sessions.get("user-1"), resumedThread);
 });
 
-test("sendMessage starts new threads with the default model and low reasoning", async () => {
+test("sendMessage treats a blank model override as unset and uses the defaults", async () => {
   const previousCodexModel = process.env.CODEX_MODEL;
   try {
-    delete process.env.CODEX_MODEL;
+    process.env.CODEX_MODEL = "";
     const manager = createTestManager();
     const thread: ThreadLike = {
       id: "new-thread",

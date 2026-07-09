@@ -7,6 +7,9 @@ const require = createRequire(import.meta.url);
 const DISCORD_MAX = 1990; // Leave headroom for code-fence close/reopen overhead
 const DEFAULT_CODEX_MODEL = "gpt-5.6-sol";
 const DEFAULT_CODEX_REASONING_EFFORT = "low";
+function configuredCodexModel() {
+    return process.env.CODEX_MODEL?.trim() || DEFAULT_CODEX_MODEL;
+}
 function isThreadNotFoundError(err) {
     const message = err instanceof Error ? err.message : String(err);
     return /(thread|session).*(not found|missing|unknown)/i.test(message);
@@ -201,7 +204,7 @@ export class SessionManager {
     threadOptions(key) {
         const workingDirectory = this.workingDirOverrides.get(key) ?? process.cwd();
         return {
-            model: this.modelOverrides.get(key) ?? process.env.CODEX_MODEL ?? DEFAULT_CODEX_MODEL,
+            model: this.modelOverrides.get(key) ?? configuredCodexModel(),
             modelReasoningEffort: DEFAULT_CODEX_REASONING_EFFORT,
             workingDirectory,
             skipGitRepoCheck: true,
@@ -355,7 +358,7 @@ export class SessionManager {
             modelsById.set(model.id, model);
         }
         const configured = [
-            process.env.CODEX_MODEL ?? DEFAULT_CODEX_MODEL,
+            configuredCodexModel(),
             ...this.modelOverrides.values(),
         ].filter((model) => Boolean(model));
         for (const id of configured) {
@@ -399,7 +402,7 @@ export class SessionManager {
         this.sessions.delete(userId);
     }
     async getCurrentModel(key) {
-        return this.modelOverrides.get(key) ?? process.env.CODEX_MODEL ?? DEFAULT_CODEX_MODEL;
+        return this.modelOverrides.get(key) ?? configuredCodexModel();
     }
     async listAgents(..._args) {
         unsupported("Agent listing");

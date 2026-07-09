@@ -9,6 +9,10 @@ const DISCORD_MAX = 1990; // Leave headroom for code-fence close/reopen overhead
 const DEFAULT_CODEX_MODEL = "gpt-5.6-sol";
 const DEFAULT_CODEX_REASONING_EFFORT = "low";
 
+function configuredCodexModel(): string {
+  return process.env.CODEX_MODEL?.trim() || DEFAULT_CODEX_MODEL;
+}
+
 type McpServerConfig = Record<string, unknown> & { tools?: string[] };
 type ModelInfo = { id: string; name: string };
 type CachedCodexModel = {
@@ -230,7 +234,7 @@ export class SessionManager {
   private threadOptions(key: string): ThreadOptions {
     const workingDirectory = this.workingDirOverrides.get(key) ?? process.cwd();
     return {
-      model: this.modelOverrides.get(key) ?? process.env.CODEX_MODEL ?? DEFAULT_CODEX_MODEL,
+      model: this.modelOverrides.get(key) ?? configuredCodexModel(),
       modelReasoningEffort: DEFAULT_CODEX_REASONING_EFFORT,
       workingDirectory,
       skipGitRepoCheck: true,
@@ -417,7 +421,7 @@ export class SessionManager {
     }
 
     const configured = [
-      process.env.CODEX_MODEL ?? DEFAULT_CODEX_MODEL,
+      configuredCodexModel(),
       ...this.modelOverrides.values(),
     ].filter(
       (model): model is string => Boolean(model)
@@ -469,7 +473,7 @@ export class SessionManager {
   }
 
   async getCurrentModel(key: string): Promise<string | undefined> {
-    return this.modelOverrides.get(key) ?? process.env.CODEX_MODEL ?? DEFAULT_CODEX_MODEL;
+    return this.modelOverrides.get(key) ?? configuredCodexModel();
   }
 
   async listAgents(..._args: unknown[]): Promise<{ name: string; displayName: string; description: string }[]> {
