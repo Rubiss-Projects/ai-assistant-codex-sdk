@@ -1,7 +1,5 @@
 function sessionScope(interaction) {
-    const isBotOwnedThread = interaction.channel?.isThread() &&
-        interaction.channel.ownerId === interaction.client.user?.id;
-    return isBotOwnedThread
+    return interaction.channel?.isThread()
         ? { key: interaction.channelId, label: "this thread" }
         : { key: interaction.user.id, label: "your session" };
 }

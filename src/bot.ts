@@ -108,7 +108,12 @@ export function createBot(sessions: SessionManager): Client {
 
     if (!isMentioned && !isFreeChannel) return;
 
-    await handleMention(message, client, sessions);
+    await handleMention(
+      message,
+      client,
+      sessions,
+      message.channel.isThread() ? message.channelId : undefined
+    );
   });
 
   return client;

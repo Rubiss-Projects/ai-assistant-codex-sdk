@@ -5,7 +5,8 @@ A personal Discord bot backed by [`@openai/codex-sdk`](https://www.npmjs.com/pac
 ## Features
 
 - `/chat` creates a dedicated Discord thread for a persistent Codex conversation.
-- Mentions and configured free-chat channels continue the matching Codex thread.
+- Mentions and configured free-chat channels continue the matching Codex session, scoped by
+  Discord thread when applicable and otherwise by user.
 - `/ask` runs a one-shot prompt in a temporary session.
 - Image attachments are forwarded to Codex as local image inputs.
 - `workspace` options set the Codex working directory for a session.
