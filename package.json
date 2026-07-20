@@ -23,7 +23,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@openai/codex-sdk": "^0.144.3",
+    "@openai/codex-sdk": "^0.144.6",
     "discord.js": "^14.27.0",
     "dotenv": "^17.4.2"
   },
